@@ -13,8 +13,6 @@
 @property (nonatomic, strong) UIMutableUserNotificationCategory *viewCartCategory;
 @property (nonatomic, strong) UIMutableUserNotificationCategory *oneButtonAlertCategory;
 @property (nonatomic, strong) UIMutableUserNotificationCategory *twoButtonAlertCategory;
-@property (nonatomic, strong) UIMutableUserNotificationCategory *carouselCategory;
-@property (nonatomic, strong) UIMutableUserNotificationCategory *carouselAnimationCategory;
 @property (nonatomic, strong) NSSet *notificationCategories;
 @property (nonatomic) UIUserNotificationType notificationTypes;
 @property (nonatomic, strong) UIUserNotificationSettings *notificationSettings;
