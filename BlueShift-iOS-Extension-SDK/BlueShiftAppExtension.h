@@ -9,7 +9,7 @@
 #define BlueShiftAppExtension_h
 
 #import "BlueShiftPushNotification.h"
-#import "BlueShiftCarousalViewController.h"
+
 
 
 #endif /* BlueShiftAppExtension_h */
