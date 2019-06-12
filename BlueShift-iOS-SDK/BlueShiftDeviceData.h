@@ -19,16 +19,16 @@
 
 @interface BlueShiftDeviceData : NSObject
 
-@property (nonatomic, strong) NSString *deviceUUID;
-@property (nonatomic, strong) NSString *deviceToken;
-@property (nonatomic, strong) NSString *deviceIDFA;
-@property (nonatomic, strong) NSString *deviceIDFV;
+@property (nonatomic, readonly) NSString *deviceUUID;
+@property (nonatomic, readonly) NSString *deviceToken;
+@property (nonatomic, readonly) NSString *deviceIDFA;
+@property (nonatomic, readonly) NSString *deviceIDFV;
 @property  CLLocationManager *locationManager;
 @property (nonatomic, strong) CLLocation *currentLocation;
-@property (nonatomic, strong) NSString *deviceManufacturer;
-@property (nonatomic, strong) NSString *deviceType;
-@property (nonatomic, strong) NSString *operatingSystem;
-@property (nonatomic, strong) NSString *networkCarrierName;
+@property (nonatomic, readonly) NSString *deviceManufacturer;
+@property (nonatomic, readonly) NSString *deviceType;
+@property (nonatomic, readonly) NSString *operatingSystem;
+@property (nonatomic, readonly) NSString *networkCarrierName;
 
 + (instancetype) currentDeviceData;
 

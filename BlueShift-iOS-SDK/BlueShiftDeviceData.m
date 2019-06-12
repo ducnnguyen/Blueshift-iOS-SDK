@@ -90,7 +90,7 @@ static BlueShiftDeviceData *_currentDeviceData = nil;
         [deviceMutableDictionary setObject:self.operatingSystem forKey:@"os_name"];
     }
     
-    if (self.networkCarrierName) {
+    if (self.networkCarrierName != nil && [self.networkCarrierName isKindOfClass:[NSString class]]) {
         [deviceMutableDictionary setObject:self.networkCarrierName forKey:@"network_carrier"];
     }
     
