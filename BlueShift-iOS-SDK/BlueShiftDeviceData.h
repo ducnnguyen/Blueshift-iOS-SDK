@@ -20,7 +20,7 @@
 @interface BlueShiftDeviceData : NSObject
 
 @property (nonatomic, readonly) NSString *deviceUUID;
-@property (nonatomic, readonly) NSString *deviceToken;
+@property (nonatomic, strong) NSString *deviceToken;
 @property (nonatomic, readonly) NSString *deviceIDFA;
 @property (nonatomic, readonly) NSString *deviceIDFV;
 @property  CLLocationManager *locationManager;
