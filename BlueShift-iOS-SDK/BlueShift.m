@@ -75,6 +75,11 @@ static BlueShift *_sharedBlueShiftInstance = nil;
     } else {
         blueShiftAppDelegate.userNotificationDelegate = blueShiftUserNotificationCenterDelegate;
     }
+    if(config.blueShiftPushDelegate) {
+        blueShiftAppDelegate.blueShiftPushDelegate = config.blueShiftPushDelegate;
+    } else {
+        blueShiftAppDelegate.blueShiftPushDelegate = oldDelegate;
+    }
     if (config.enableAnalytics == YES) {
         // Start periodic batch upload timer
         [BlueShiftHttpRequestBatchUpload startBatchUpload];
@@ -597,7 +602,7 @@ static BlueShift *_sharedBlueShiftInstance = nil;
     NSString *bsft_experiment_uuid = [pushDetailsDictionary objectForKey:@"bsft_experiment_uuid"];
     NSString *bsft_user_uuid = [pushDetailsDictionary objectForKey:@"bsft_user_uuid"];
     NSString *message_uuid = [pushDetailsDictionary objectForKey:@"bsft_message_uuid"];
-    NSString *transactional_uuid = [pushDetailsDictionary objectForKey:@"bsft_transactional_uuid"];
+    NSString *transactional_uuid = [pushDetailsDictionary objectForKey:@"bsft_transaction_uuid"];
     NSString *sdkVersion = [NSString stringWithFormat:@"%@", kSDKVersionNumber];
     NSMutableDictionary *pushTrackParametersMutableDictionary = [NSMutableDictionary dictionary];
     if (bsft_user_uuid) {

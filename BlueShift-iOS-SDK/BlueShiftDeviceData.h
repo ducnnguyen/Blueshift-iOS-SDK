@@ -21,8 +21,8 @@
 
 @property (nonatomic, readonly) NSString *deviceUUID;
 @property (nonatomic, strong) NSString *deviceToken;
-@property (nonatomic, readonly) NSString *deviceIDFA;
-@property (nonatomic, readonly) NSString *deviceIDFV;
+@property (nonatomic, strong) NSString *deviceIDFV;
+
 @property  CLLocationManager *locationManager;
 @property (nonatomic, strong) CLLocation *currentLocation;
 @property (nonatomic, readonly) NSString *deviceManufacturer;
