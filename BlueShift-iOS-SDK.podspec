@@ -79,7 +79,7 @@ Pod::Spec.new do |s|
   #
 
 
-  s.source       = { :git => "https://github.com/ducnnguyen/Blueshift-iOS-SDK.git", :tag => "v_{s.version}" }
+  s.source       = { :git => "https://github.com/ducnnguyen/Blueshift-iOS-SDK.git", :tag => "v.{s.version}" }
 
   # ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #

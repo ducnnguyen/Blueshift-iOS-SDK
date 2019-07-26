@@ -11,7 +11,7 @@
 static BlueShiftDeviceData *_currentDeviceData = nil;
 
 @implementation BlueShiftDeviceData
-
+@synthesize networkCarrierName = _networkCarrierName;
 + (instancetype) currentDeviceData {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -36,9 +36,12 @@ static BlueShiftDeviceData *_currentDeviceData = nil;
 }
 
 - (NSString *)networkCarrierName {
-    CTTelephonyNetworkInfo *netinfo = [[CTTelephonyNetworkInfo alloc] init];
-    CTCarrier *carrier = [netinfo subscriberCellularProvider];
-    return [carrier carrierName];
+    if (_networkCarrierName == nil) {
+        CTTelephonyNetworkInfo *netinfo = [[CTTelephonyNetworkInfo alloc] init];
+        CTCarrier *carrier = [netinfo subscriberCellularProvider];
+        _networkCarrierName =  [carrier carrierName] ?: @"Unknown";
+    }
+    return _networkCarrierName;
 }
 
 - (NSString *)operatingSystem {
