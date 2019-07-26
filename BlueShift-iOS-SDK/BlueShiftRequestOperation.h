@@ -16,27 +16,27 @@
 
 // property to hold the request operation URL ...
 
-@property NSString *url;
+@property (nonatomic, strong) NSString *url;
 
 
 // property to hold the request operation http Method ...
 
-@property BlueShiftHTTPMethod httpMethod;
+@property (nonatomic, assign) BlueShiftHTTPMethod httpMethod;
 
 
 
 // property to hold the request operation parameters ...
 
-@property NSDictionary *parameters;
+@property (nonatomic, strong) NSDictionary *parameters;
 
 // property to hold the retry count ...
-@property NSInteger retryAttemptsCount;
+@property (nonatomic, assign) NSInteger retryAttemptsCount;
 
 // property to hold the timestamp for which next request to be send ...
-@property NSInteger nextRetryTimeStamp;
+@property (nonatomic, assign) NSInteger nextRetryTimeStamp;
 
 // property to check batch event or real time event
-@property BOOL isBatchEvent;
+@property (nonatomic, assign) BOOL isBatchEvent;
 
 // initialize BlueShiftRequestOperation instance with url and other request based details...
 

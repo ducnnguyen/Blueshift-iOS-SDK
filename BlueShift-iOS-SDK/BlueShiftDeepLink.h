@@ -20,8 +20,8 @@ typedef enum {
 
 @interface BlueShiftDeepLink : NSObject
 
-@property NSURL *pathURL;
-@property BlueShiftDeepLinkRoute linkRoute;
+@property (nonatomic, strong) NSURL *pathURL;
+@property (nonatomic, assign) BlueShiftDeepLinkRoute linkRoute;
 @property (nonatomic, weak) id<BlueShiftPushParamDelegate> blueShiftPushParamDelegate;
 
 - (id)initWithLinkRoute:(BlueShiftDeepLinkRoute)linkRoute andNSURL:(NSURL *)pathURL;

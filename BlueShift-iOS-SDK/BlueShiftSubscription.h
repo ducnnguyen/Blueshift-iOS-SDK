@@ -11,12 +11,12 @@
 @interface BlueShiftSubscription : NSObject
 
 
-@property BlueShiftSubscriptionState subscriptionState;
-@property NSString *cycleType;
-@property NSInteger cycleLength;
-@property NSString *subscriptionType;
-@property float price;
-@property NSTimeInterval startDate;
+@property (nonatomic, assign) BlueShiftSubscriptionState subscriptionState;
+@property (nonatomic, strong) NSString *cycleType;
+@property (nonatomic, assign) NSInteger cycleLength;
+@property (nonatomic, strong) NSString *subscriptionType;
+@property (nonatomic, assign) float price;
+@property (nonatomic, assign) NSTimeInterval startDate;
 
 
 - (id)initWithSubscriptionState:(BlueShiftSubscriptionState)subscriptionState andCycleType:(NSString *)cycleType andCycleLength:(NSInteger)cycleLength andSubscriptionType:(NSString *)subscriptionType andPrice:(float)price andStartDate:(NSTimeInterval)startDate;

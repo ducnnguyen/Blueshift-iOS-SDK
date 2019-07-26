@@ -36,12 +36,12 @@
 @interface BlueShift : NSObject
 
 @property (nonatomic, strong) BlueShiftConfig *config;
-@property BlueShiftDeviceData *deviceData;
-@property BlueShiftAppData *appData;
+@property (nonatomic, strong) BlueShiftDeviceData *deviceData;
+@property (nonatomic, strong) BlueShiftAppData *appData;
 @property (nonatomic, strong) BlueShiftUserInfo *userInfo;
 @property (nonatomic, strong) BlueShiftPushNotificationSettings *pushNotification;
 @property (nonatomic, strong) BlueShiftUserNotificationSettings *userNotification;
-@property NSString *deviceToken;
+@property (nonatomic, strong) NSString *deviceToken;
 
 + (instancetype)sharedInstance;
 + (void) initWithConfiguration:(BlueShiftConfig *)config;
@@ -50,8 +50,8 @@
 - (void) setPushParamDelegate: (id) obj;
 - (NSString *) getDeviceToken;
 - (void) setDeviceToken;
-@property BlueShiftAppDelegate *appDelegate;
-@property BlueShiftUserNotificationCenterDelegate *userNotificationDelegate;
+@property (nonatomic, strong) BlueShiftAppDelegate *appDelegate;
+@property (nonatomic, strong) BlueShiftUserNotificationCenterDelegate *userNotificationDelegate;
 
 
 // track events functions ...

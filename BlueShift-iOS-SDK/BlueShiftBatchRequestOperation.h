@@ -13,13 +13,13 @@
 @interface BlueShiftBatchRequestOperation : NSObject
 
 // property to hold the request operation parameters list ...
-@property NSArray *paramsArray;
+@property (nonatomic, strong) NSArray *paramsArray;
 
 // property to hold the retry count ...
-@property NSInteger retryAttemptsCount;
+@property (nonatomic, assign) NSInteger retryAttemptsCount;
 
 // property to hold the timestamp for which next request to be send ...
-@property NSInteger nextRetryTimeStamp;
+@property (nonatomic, assign) NSInteger nextRetryTimeStamp;
 
 
 // initialize BlueShiftBatchRequestOperation with request based details...

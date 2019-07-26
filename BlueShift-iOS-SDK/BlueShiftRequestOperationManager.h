@@ -15,8 +15,8 @@
 @interface BlueShiftRequestOperationManager : NSObject<NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
 
 
-@property NSURLSession *backgroundSession;
-@property NSURLSessionConfiguration *sessionConfiguraion;
+@property (nonatomic, strong) NSURLSession *backgroundSession;
+@property (nonatomic, strong) NSURLSessionConfiguration *sessionConfiguraion;
 
 // Method to get the shared instance for BlueShiftOperationManager ...
 

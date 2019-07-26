@@ -11,8 +11,8 @@
 
 @interface BlueShiftPushNotification : NSObject
 
-@property NSArray <UNNotificationAttachment *>* attachments;
-@property NSString *apiKey;
+@property (nonatomic, strong) NSArray <UNNotificationAttachment *>* attachments;
+@property (nonatomic, strong) NSString *apiKey;
 
 + (instancetype) sharedInstance;
 - (NSArray *)integratePushNotificationWithMediaAttachementsForRequest:(UNNotificationRequest *)request;

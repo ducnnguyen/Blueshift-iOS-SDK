@@ -21,11 +21,11 @@
 
 @interface BlueShiftAppDelegate : NSObject<UIApplicationDelegate, CLLocationManagerDelegate, BlueShiftAlertControllerDelegate>
 
-@property NSDictionary * _Nullable userInfo;
-@property NSDictionary * _Nullable pushAlertDictionary;
+@property (nonatomic, strong) NSDictionary * _Nullable userInfo;
+@property (nonatomic, strong) NSDictionary * _Nullable pushAlertDictionary;
 
-@property NSObject<UIApplicationDelegate> * _Nonnull oldDelegate;
-@property NSObject<UNUserNotificationCenterDelegate> * _Nonnull userNotificationDelegate;
+@property (nonatomic, strong) NSObject<UIApplicationDelegate> * _Nonnull oldDelegate;
+@property (nonatomic, strong) NSObject<UNUserNotificationCenterDelegate> * _Nonnull userNotificationDelegate;
 @property (nonatomic, weak) id<BlueShiftPushDelegate> _Nullable blueShiftPushDelegate;
 @property (nonatomic, weak) id<BlueShiftPushParamDelegate> _Nullable blueShiftPushParamDelegate;
 

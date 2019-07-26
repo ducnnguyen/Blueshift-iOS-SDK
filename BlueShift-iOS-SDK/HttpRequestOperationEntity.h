@@ -26,7 +26,7 @@
 @property (nonatomic, strong) NSData * parameters;
 
 // Batch event or real time event
-@property (nonatomic) BOOL isBatchEvent;
+@property (nonatomic, assign) BOOL isBatchEvent;
 
 // property to hold the request url ...
 

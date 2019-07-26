@@ -13,27 +13,27 @@
 
 @interface BlueShiftConfig : NSObject
 
-@property NSString * _Nonnull apiKey;
-@property NSDictionary * _Nonnull applicationLaunchOptions;
+@property (nonatomic, strong) NSString * _Nonnull apiKey;
+@property (nonatomic, strong) NSDictionary * _Nonnull applicationLaunchOptions;
 
-@property NSURL * _Nullable productPageURL;
-@property NSURL * _Nullable cartPageURL;
-@property NSURL * _Nullable offerPageURL;
+@property (nonatomic, strong) NSURL * _Nullable productPageURL;
+@property (nonatomic, strong) NSURL * _Nullable cartPageURL;
+@property (nonatomic, strong) NSURL * _Nullable offerPageURL;
 
-@property BOOL enablePushNotification;
-@property BOOL enableLocationAccess;
-@property BOOL enableAnalytics;
-@property BOOL enableAppOpenTrackEvent;
+@property (nonatomic, assign) BOOL enablePushNotification;
+@property (nonatomic, assign) BOOL enableLocationAccess;
+@property (nonatomic, assign) BOOL enableAnalytics;
+@property (nonatomic, assign) BOOL enableAppOpenTrackEvent;
 
-@property NSSet * _Nullable customCategories;
+@property (nonatomic, strong) NSSet * _Nullable customCategories;
 
-@property NSString * _Nullable appGroupID;
+@property (nonatomic, strong) NSString * _Nullable appGroupID;
 
-@property NSObject<UNUserNotificationCenterDelegate> * _Nonnull userNotificationDelegate;
-@property id<BlueShiftPushDelegate> _Nullable blueShiftPushDelegate;
+@property (nonatomic, strong) NSObject<UNUserNotificationCenterDelegate> * _Nonnull userNotificationDelegate;
+@property (nonatomic, weak) id<BlueShiftPushDelegate> _Nullable blueShiftPushDelegate;
 
-@property NSString * _Nonnull blueShiftNotificationName;
-@property NSString * _Nonnull isEnabledPushNotificationKey;
+@property (nonatomic, strong) NSString * _Nonnull blueShiftNotificationName;
+@property (nonatomic, strong) NSString * _Nonnull isEnabledPushNotificationKey;
 
 - (BOOL)validateConfigDetails;
 

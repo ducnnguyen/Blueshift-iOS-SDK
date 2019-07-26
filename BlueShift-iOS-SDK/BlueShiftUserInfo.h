@@ -19,9 +19,9 @@
 @property (nonatomic, strong) NSDate *joinedAt;
 @property (nonatomic, strong) NSString *facebookID;
 @property (nonatomic, strong) NSString *education;
-@property BOOL unsubscribed;
+@property (nonatomic, assign) BOOL unsubscribed;
 
-@property NSDictionary *additionalUserInfo;
+@property (nonatomic, strong) NSDictionary *additionalUserInfo;
 @property (nonatomic, strong) NSString *retailerCustomerID;
 
 - (void)save;

@@ -9,9 +9,9 @@
 
 @interface BlueShiftProduct : NSObject
 
-@property NSString *sku;
-@property NSInteger quantity;
-@property float price;
+@property (nonatomic, strong) NSString *sku;
+@property (nonatomic, assign) NSInteger quantity;
+@property (nonatomic, assign) float price;
 
 - (NSDictionary *)toDictionary;
 + (NSMutableArray *)productsDictionaryMutableArrayForProductsArray:(NSArray *)productsArray;
