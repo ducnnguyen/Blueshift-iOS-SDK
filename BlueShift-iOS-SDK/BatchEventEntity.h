@@ -16,11 +16,11 @@
 
 // property to hold the parameters array as encrypted NSData ...
 
-@property (nonatomic, retain) NSData * paramsArray;
+@property (nonatomic, strong) NSData * paramsArray;
 
-@property (nonatomic, retain) NSNumber *retryAttemptsCount;
+@property (nonatomic, strong) NSNumber *retryAttemptsCount;
 
-@property (nonatomic, retain) NSNumber *nextRetryTimeStamp;
+@property (nonatomic, strong) NSNumber *nextRetryTimeStamp;
 
 // Method to insert Entry for a particular request operation in core data ...
 

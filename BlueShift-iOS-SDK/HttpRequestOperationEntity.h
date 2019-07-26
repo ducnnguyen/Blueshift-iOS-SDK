@@ -17,24 +17,24 @@
 
 
 // property to hold the type of httpMethod as NSNumber in Core Data ...
-@property (nonatomic, retain) NSNumber * httpMethodNumber;
+@property (nonatomic, strong) NSNumber * httpMethodNumber;
 
 
 
 // property to hold the parameter as encrypted NSData ...
 
-@property (nonatomic, retain) NSData * parameters;
+@property (nonatomic, strong) NSData * parameters;
 
 // Batch event or real time event
-@property BOOL isBatchEvent;
+@property (nonatomic) BOOL isBatchEvent;
 
 // property to hold the request url ...
 
-@property (nonatomic, retain) NSString * url;
+@property (nonatomic, strong) NSString * url;
 
-@property (nonatomic, retain) NSNumber *retryAttemptsCount;
+@property (nonatomic, strong) NSNumber *retryAttemptsCount;
 
-@property (nonatomic, retain) NSNumber *nextRetryTimeStamp;
+@property (nonatomic, strong) NSNumber *nextRetryTimeStamp;
 
 // Method to insert Entry for a particular request operation in core data ...
 
