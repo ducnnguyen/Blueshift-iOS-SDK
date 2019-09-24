@@ -51,29 +51,33 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
                     NSLog(@"Caught exception %@", exception);
                 }
                 if(entity != nil) {
-                    NSString *url = requestOperation.url;
-                    BlueShiftHTTPMethod httpMethod = requestOperation.httpMethod;
-                    NSDictionary *parameters = requestOperation.parameters;
-                    NSInteger nextRetryTimeStamp = requestOperation.nextRetryTimeStamp;
-                    NSInteger retryAttemptsCount = requestOperation.retryAttemptsCount;
-                    BOOL isBatchEvent = requestOperation.isBatchEvent;
-                    
-                    if ([BlueShiftNetworkReachabilityManager networkConnected] == NO)  {
-                        isBatchEvent = YES;
-                    }
-                    NSManagedObjectContext *context;
-                    if (isBatchEvent) {
-                        context = appDelegate.batchEventManagedObjectContext;
-                    } else {
-                        context = appDelegate.realEventManagedObjectContext;
-                    }
-                    HttpRequestOperationEntity *httpRequestOperationEntity = [[HttpRequestOperationEntity alloc] initWithEntity:entity insertIntoManagedObjectContext:context];
-                    if(httpRequestOperationEntity != nil) {
-                        [httpRequestOperationEntity insertEntryWithMethod:httpMethod andParameters:parameters andURL:url andNextRetryTimeStamp:nextRetryTimeStamp andRetryAttemptsCount:retryAttemptsCount andIsBatchEvent:isBatchEvent];
+                    @try {
+                        NSString *url = requestOperation.url;
+                        BlueShiftHTTPMethod httpMethod = requestOperation.httpMethod;
+                        NSDictionary *parameters = requestOperation.parameters;
+                        NSInteger nextRetryTimeStamp = requestOperation.nextRetryTimeStamp;
+                        NSInteger retryAttemptsCount = requestOperation.retryAttemptsCount;
+                        BOOL isBatchEvent = requestOperation.isBatchEvent;
                         
-                        if(!isBatchEvent) {
-                            [BlueShiftRequestQueue processRequestsInQueue];
+                        if ([BlueShiftNetworkReachabilityManager networkConnected] == NO)  {
+                            isBatchEvent = YES;
                         }
+                        NSManagedObjectContext *context;
+                        if (isBatchEvent) {
+                            context = appDelegate.batchEventManagedObjectContext;
+                        } else {
+                            context = appDelegate.realEventManagedObjectContext;
+                        }
+                        HttpRequestOperationEntity *httpRequestOperationEntity = [[HttpRequestOperationEntity alloc] initWithEntity:entity insertIntoManagedObjectContext:context];
+                        if(httpRequestOperationEntity != nil) {
+                            [httpRequestOperationEntity insertEntryWithMethod:httpMethod andParameters:parameters andURL:url andNextRetryTimeStamp:nextRetryTimeStamp andRetryAttemptsCount:retryAttemptsCount andIsBatchEvent:isBatchEvent];
+                            
+                            if(!isBatchEvent) {
+                                [BlueShiftRequestQueue processRequestsInQueue];
+                            }
+                        }
+                    } @catch (NSException *exception) {
+                        NSLog(@"Caught exception %@", exception);
                     }
                 }
             }
@@ -159,17 +163,18 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
         }
         else {
             @try {
-                if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+                if(context && [context isKindOfClass:[NSManagedObjectContext class]] && !operationEntityToBeExecuted.isFault) {
                     [context performBlock:^{
-                        [context deleteObject:operationEntityToBeExecuted];
-                        [context performBlock:^{
-                            NSError *saveError = nil;
-                            if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
-                                [context save:&saveError];
-                            }
-                            _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
-                            [self processRequestsInQueue];
-                        }];
+                        NSManagedObject *object = [context objectWithID:operationEntityToBeExecuted.objectID];
+                        [context deleteObject:object];
+                        
+                        NSError *saveError = nil;
+                        if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+                            [context save:&saveError];
+                        }
+                        _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
+                        [self processRequestsInQueue];
+                        
                     }];
                 } else {
                     _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
@@ -191,17 +196,18 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
 + (void)deleteRecords:(NSManagedObjectContext *)context forEntity:(HttpRequestOperationEntity*)operationEntityToBeExecuted {
     // delete record for the request operation if it is successfully executed ...
     @try {
-        if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+        if(context && [context isKindOfClass:[NSManagedObjectContext class]] && !operationEntityToBeExecuted.isFault) {
             [context performBlock:^{
-                [context deleteObject:operationEntityToBeExecuted];
-                [context performBlock:^{
-                    NSError *saveError = nil;
-                    if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
-                        [context save:&saveError];
-                    }
-                    _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
-                    [self processRequestsInQueue];
-                }];
+                NSManagedObject *temp = [context objectWithID:operationEntityToBeExecuted.objectID];
+                [context deleteObject:temp];
+                
+                NSError *saveError = nil;
+                if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+                    [context save:&saveError];
+                }
+                _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
+                [self processRequestsInQueue];
+                
             }];
         } else {
             [self processRequestsInQueue];
@@ -220,22 +226,21 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
     requestOperation.isBatchEvent = YES;
     
     @try {
-        if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+        if(context && [context isKindOfClass:[NSManagedObjectContext class]] && !operationEntityToBeExecuted.isFault) {
             [context performBlock:^{
-                [context deleteObject:operationEntityToBeExecuted];
-                [context performBlock:^{
-                    NSError *saveError = nil;
-                    if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
-                        [context save:&saveError];
-                    }
-                    _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
-                    
-                    // request record is removed successfully from core data ...
-                    if (requestOperation.retryAttemptsCount > 0) {
-                        [BlueShiftRequestQueue addRequestOperation:requestOperation];
-                    }
-                    [self processRequestsInQueue];
-                }];
+                NSManagedObject *object = [context objectWithID:operationEntityToBeExecuted.objectID];
+                [context deleteObject:object];
+                NSError *saveError = nil;
+                if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+                    [context save:&saveError];
+                }
+                _requestQueueStatus = BlueShiftRequestQueueStatusAvailable;
+                
+                // request record is removed successfully from core data ...
+                if (requestOperation.retryAttemptsCount > 0) {
+                    [BlueShiftRequestQueue addRequestOperation:requestOperation];
+                }
+                [self processRequestsInQueue];
             }];
         }
     }
