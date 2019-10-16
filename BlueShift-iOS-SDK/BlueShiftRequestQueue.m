@@ -93,8 +93,6 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
                                 [BlueShiftRequestQueue processRequestsInQueue];
                             }
                         }
-                    } @catch (NSException *exception) {
-                        NSLog(@"Caught exception %@", exception);
                     }
                 }
             }
