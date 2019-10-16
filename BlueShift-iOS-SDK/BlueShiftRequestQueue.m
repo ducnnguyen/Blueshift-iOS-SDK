@@ -50,14 +50,31 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
                 @catch (NSException *exception) {
                     NSLog(@"Caught exception %@", exception);
                 }
-                if(entity != nil) {
+                if (entity != nil) {
+                    NSString *url = requestOperation.url;
+                    BlueShiftHTTPMethod httpMethod = requestOperation.httpMethod;
+                    NSDictionary *parameters = requestOperation.parameters;
+                    NSInteger nextRetryTimeStamp = requestOperation.nextRetryTimeStamp;
+                    NSInteger retryAttemptsCount = requestOperation.retryAttemptsCount;
+                    BOOL isBatchEvent = requestOperation.isBatchEvent;
+                    
+                    if ([BlueShiftNetworkReachabilityManager networkConnected] == NO)  {
+                        isBatchEvent = YES;
+                    }
+                    NSManagedObjectContext *context;
+                    if (isBatchEvent) {
+                        context = appDelegate.batchEventManagedObjectContext;
+                    } else {
+                        context = appDelegate.realEventManagedObjectContext;
+                    }
+                    HttpRequestOperationEntity *httpRequestOperationEntity;
                     @try {
-                        NSString *url = requestOperation.url;
-                        BlueShiftHTTPMethod httpMethod = requestOperation.httpMethod;
-                        NSDictionary *parameters = requestOperation.parameters;
-                        NSInteger nextRetryTimeStamp = requestOperation.nextRetryTimeStamp;
-                        NSInteger retryAttemptsCount = requestOperation.retryAttemptsCount;
-                        BOOL isBatchEvent = requestOperation.isBatchEvent;
+                        httpRequestOperationEntity = [[HttpRequestOperationEntity alloc] initWithEntity:entity insertIntoManagedObjectContext:context];
+                    } @catch (NSException *exception) {
+                        NSLog(@"Caught exception %@", exception);
+                    }
+                    if (httpRequestOperationEntity != nil) {
+                        [httpRequestOperationEntity insertEntryWithMethod:httpMethod andParameters:parameters andURL:url andNextRetryTimeStamp:nextRetryTimeStamp andRetryAttemptsCount:retryAttemptsCount andIsBatchEvent:isBatchEvent];
                         
                         if ([BlueShiftNetworkReachabilityManager networkConnected] == NO)  {
                             isBatchEvent = YES;
