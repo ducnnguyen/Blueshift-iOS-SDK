@@ -50,7 +50,7 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
                 @catch (NSException *exception) {
                     NSLog(@"Caught exception %@", exception);
                 }
-                if (entity != nil) {
+                if(entity != nil) {
                     NSString *url = requestOperation.url;
                     BlueShiftHTTPMethod httpMethod = requestOperation.httpMethod;
                     NSDictionary *parameters = requestOperation.parameters;
@@ -73,25 +73,11 @@ static BlueShiftRequestQueueStatus _requestQueueStatus = BlueShiftRequestQueueSt
                     } @catch (NSException *exception) {
                         NSLog(@"Caught exception %@", exception);
                     }
-                    if (httpRequestOperationEntity != nil) {
+                    if(httpRequestOperationEntity != nil) {
                         [httpRequestOperationEntity insertEntryWithMethod:httpMethod andParameters:parameters andURL:url andNextRetryTimeStamp:nextRetryTimeStamp andRetryAttemptsCount:retryAttemptsCount andIsBatchEvent:isBatchEvent];
                         
-                        if ([BlueShiftNetworkReachabilityManager networkConnected] == NO)  {
-                            isBatchEvent = YES;
-                        }
-                        NSManagedObjectContext *context;
-                        if (isBatchEvent) {
-                            context = appDelegate.batchEventManagedObjectContext;
-                        } else {
-                            context = appDelegate.realEventManagedObjectContext;
-                        }
-                        HttpRequestOperationEntity *httpRequestOperationEntity = [[HttpRequestOperationEntity alloc] initWithEntity:entity insertIntoManagedObjectContext:context];
-                        if(httpRequestOperationEntity != nil) {
-                            [httpRequestOperationEntity insertEntryWithMethod:httpMethod andParameters:parameters andURL:url andNextRetryTimeStamp:nextRetryTimeStamp andRetryAttemptsCount:retryAttemptsCount andIsBatchEvent:isBatchEvent];
-                            
-                            if(!isBatchEvent) {
-                                [BlueShiftRequestQueue processRequestsInQueue];
-                            }
+                        if(!isBatchEvent) {
+                            [BlueShiftRequestQueue processRequestsInQueue];
                         }
                     }
                 }
