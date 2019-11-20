@@ -8,6 +8,8 @@
 #import "BlueShiftAppDelegate.h"
 #import "BlueShiftNotificationConstants.h"
 #import "BlueShiftHttpRequestBatchUpload.h"
+#import "BlueShiftInAppNotificationManager.h"
+#import "BlueShiftInAppNotificationConstant.h"
 
 #define SYSTEM_VERSION_GRATERTHAN_OR_EQUALTO(v) ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedAscending)
 
@@ -28,21 +30,24 @@
     
     if ([[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)]) {
         if(SYSTEM_VERSION_GRATERTHAN_OR_EQUALTO(@"10.0")){
-            UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-            center.delegate = self.userNotificationDelegate;
-            [center setNotificationCategories: [[[BlueShift sharedInstance] userNotification] notificationCategories]];
-            [center requestAuthorizationWithOptions:([[[BlueShift sharedInstance] userNotification] notificationTypes]) completionHandler:^(BOOL granted, NSError * _Nullable error){
-                if(!error){
-                    dispatch_async(dispatch_get_main_queue(), ^(void) {
-                        [[UIApplication sharedApplication] registerForRemoteNotifications];
-                    });
-                }
-            }];
+            if (@available(iOS 10.0, *)) {
+                UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+                center.delegate = self.userNotificationDelegate;
+                [center setNotificationCategories: [[[BlueShift sharedInstance] userNotification] notificationCategories]];
+                [center requestAuthorizationWithOptions:([[[BlueShift sharedInstance] userNotification] notificationTypes]) completionHandler:^(BOOL granted, NSError * _Nullable error){
+                    if(!error){
+                        dispatch_async(dispatch_get_main_queue(), ^(void) {
+                            [[UIApplication sharedApplication] registerForRemoteNotifications];
+                        });
+                    }
+                }];
+            }
         } else {
-            UIUserNotificationSettings* notificationSettings = [[[BlueShift sharedInstance] pushNotification] notificationSettings];
-            [[UIApplication sharedApplication] registerUserNotificationSettings: notificationSettings];
-            [[UIApplication sharedApplication] registerForRemoteNotifications];
-            
+           if (@available(iOS 10.0, *)) {
+                UIUserNotificationSettings* notificationSettings = [[[BlueShift sharedInstance] pushNotification] notificationSettings];
+                [[UIApplication sharedApplication] registerUserNotificationSettings: notificationSettings];
+                [[UIApplication sharedApplication] registerForRemoteNotifications];
+            }
 //            NSSet *categories = [[[BlueShift sharedInstance] pushNotification] notificationCategories];
 //            NSSet *customCategories = [[[BlueShift sharedInstance] config] customCategories];
 //            NSMutableSet *categoriesWithCustomCategory = [[NSMutableSet alloc] init];
@@ -59,6 +64,8 @@
 //            }
 
         }
+        
+        [self downloadFileFromURL];
     }
 }
 
@@ -168,13 +175,9 @@
     [self application:application handleRemoteNotification:userInfo];
 }
 
-- (void)application:(UIApplication *)application handleLocalNotification:(nonnull UILocalNotification *)notification {
-    self.userInfo = notification.userInfo;
+- (void)application:(UIApplication *)application handleLocalNotification:(nonnull UNNotificationRequest *)notification  API_AVAILABLE(ios(10.0)){
+    self.userInfo = notification.content.userInfo;
     [self handleLocalNotification:self.userInfo forApplicationState:application.applicationState];
-}
-
-- (void)application:(UIApplication *)application didReceiveLocalNotification:(nonnull UILocalNotification *)notification {
-    [self application:application handleLocalNotification:notification];
 }
 
 - (void)scheduleLocalNotification:(NSDictionary *)userInfo {
@@ -182,7 +185,9 @@
     localNotification.fireDate = [NSDate dateWithTimeIntervalSinceNow:600];
     localNotification.alertBody = [[userInfo objectForKey:@"aps"] objectForKey:@"alert"];
     localNotification.timeZone = [NSTimeZone defaultTimeZone];
-    localNotification.category = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
+    if (@available(iOS 8.0, *)) {
+        localNotification.category = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
+    }
     localNotification.soundName = [[userInfo objectForKey:@"aps"] objectForKey:@"sound"];
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc]init];
     dictionary = [userInfo mutableCopy];
@@ -196,20 +201,20 @@
 - (void)presentInAppAlert:(NSDictionary *)userInfo {
     // Track notification view when app is open ...
     //[self trackPushViewedWithParameters:pushTrackParameterDictionary];
-    
+
     // Handle push notification when the app is in active state...
-    UIViewController *topViewController = [self topViewController:[[UIApplication sharedApplication].keyWindow rootViewController]];
+    //UIViewController *topViewController = [self topViewController:[[UIApplication sharedApplication].keyWindow rootViewController]];
     BlueShiftAlertView *pushNotificationAlertView = [[BlueShiftAlertView alloc] init];
     pushNotificationAlertView.alertControllerDelegate = (id<BlueShiftAlertControllerDelegate>)self;
-    UIAlertController *blueShiftAlertViewController = [pushNotificationAlertView alertViewWithPushDetailsDictionary:userInfo];
-    [topViewController presentViewController:blueShiftAlertViewController animated:YES completion:nil];
+    //UIAlertController *blueShiftAlertViewController = [pushNotificationAlertView alertViewWithPushDetailsDictionary:userInfo];
+    //[topViewController presentViewController:blueShiftAlertViewController animated:YES completion:nil];
 }
 
 - (void)handleLocalNotification:(NSDictionary *)userInfo forApplicationState:(UIApplicationState)applicationState {
     NSString *pushCategory = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
     self.pushAlertDictionary = [userInfo objectForKey:@"aps"];
     self.userInfo = userInfo;
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:userInfo];
     
     // Way to handle push notification in three states
     if (applicationState == UIApplicationStateActive) {
@@ -241,29 +246,37 @@
 }
 
 - (void)handleRemoteNotification:(NSDictionary *)userInfo {
-    NSString *pushCategory = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
-    self.pushAlertDictionary = [userInfo objectForKey:@"aps"];
-    self.userInfo = userInfo;
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:userInfo];
     
-    if ([pushCategory isEqualToString:kNotificationCategoryBuyIdentifier]) {
-        [self handleCategoryForBuyUsingPushDetailsDictionary:userInfo];
-    } else if ([pushCategory isEqualToString:kNotificationCategoryViewCartIdentifier]) {
-        [self handleCategoryForViewCartUsingPushDetailsDictionary:userInfo];
-    } else if ([pushCategory isEqualToString:kNotificationCategoryOfferIdentifier]) {
-        [self handleCategoryForPromotionUsingPushDetailsDictionary:userInfo];
-    }
-    else {
-        NSString *categoryName = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
-        if(categoryName !=nil && ![categoryName isEqualToString:@""]) {
-            if([categoryName isEqualToString:@"carousel"] || [categoryName isEqualToString:@"carousel_animation"]) {
-                [self handleCarouselPushForCategory:categoryName usingPushDetailsDictionary:userInfo];
+    /* if there is payload for IAM , give priority to the it */
+    if (nil != userInfo) {
+        [[BlueShift sharedInstance] createInAppNotification: userInfo forApplicationState: UIApplicationStateActive];
+
+    } else {
+        
+        NSString *pushCategory = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
+        self.pushAlertDictionary = [userInfo objectForKey:@"aps"];
+        self.userInfo = userInfo;
+        NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:userInfo];
+        
+        if ([pushCategory isEqualToString:kNotificationCategoryBuyIdentifier]) {
+            [self handleCategoryForBuyUsingPushDetailsDictionary:userInfo];
+        } else if ([pushCategory isEqualToString:kNotificationCategoryViewCartIdentifier]) {
+            [self handleCategoryForViewCartUsingPushDetailsDictionary:userInfo];
+        } else if ([pushCategory isEqualToString:kNotificationCategoryOfferIdentifier]) {
+            [self handleCategoryForPromotionUsingPushDetailsDictionary:userInfo];
+        }
+        else {
+            NSString *categoryName = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
+            if(categoryName !=nil && ![categoryName isEqualToString:@""]) {
+                if([categoryName isEqualToString:@"carousel"] || [categoryName isEqualToString:@"carousel_animation"]) {
+                    [self handleCarouselPushForCategory:categoryName usingPushDetailsDictionary:userInfo];
+                } else {
+                    [self handleCustomCategory:categoryName UsingPushDetailsDictionary:userInfo];
+                }
             } else {
-                [self handleCustomCategory:categoryName UsingPushDetailsDictionary:userInfo];
+                // Track notification when app is in background and when we click the push notification from tray..
+                [self trackPushClickedWithParameters:pushTrackParameterDictionary];
             }
-        } else {
-            // Track notification when app is in background and when we click the push notification from tray..
-            [self trackPushClickedWithParameters:pushTrackParameterDictionary];
         }
     }
 }
@@ -289,11 +302,14 @@
 }
 
 - (void)handleRemoteNotification:(NSDictionary *)userInfo forApplicationState:(UIApplicationState)applicationState {
+    
     NSString *pushCategory = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
     self.pushAlertDictionary = [userInfo objectForKey:@"aps"];
     self.userInfo = userInfo;
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:userInfo];
+    
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:userInfo];
     [self trackAppOpenWithParameters:pushTrackParameterDictionary];
+    
     // Way to handle push notification in three states
     if (applicationState == UIApplicationStateActive) {
         
@@ -306,46 +322,85 @@
             UIViewController *topViewController = [self topViewController:[[UIApplication sharedApplication].keyWindow rootViewController]];
             BlueShiftAlertView *pushNotificationAlertView = [[BlueShiftAlertView alloc] init];
             pushNotificationAlertView.alertControllerDelegate = (id<BlueShiftAlertControllerDelegate>)self;
-            UIAlertController *blueShiftAlertViewController = [pushNotificationAlertView alertViewWithPushDetailsDictionary:userInfo];
-            [topViewController presentViewController:blueShiftAlertViewController animated:YES completion:nil];
+            
+            if (@available(iOS 8.0, *)) {
+                UIAlertController *blueShiftAlertViewController = [pushNotificationAlertView alertViewWithPushDetailsDictionary:userInfo];
+                [topViewController presentViewController:blueShiftAlertViewController animated:YES completion:nil];
+            }
         } else {
-            [self scheduleLocalNotification:userInfo];
+            
+            BOOL isSilentPush = [self checkIfPayloadHasInAppMessage: userInfo];
+            if (isSilentPush == TRUE) {
+                printf("%f  AppDelegate: Received silent push notification \n", [[NSDate date] timeIntervalSince1970]);
+
+                [[BlueShift sharedInstance] createInAppNotification: userInfo forApplicationState: applicationState];
+            } else {
+               // [self scheduleLocalNotification:userInfo];
+            }
         }
     } else {
+        BOOL isSilentPush = [self checkIfPayloadHasInAppMessage: userInfo];
+        if (isSilentPush == TRUE) {
+            printf("%f  AppDelegate: Received silent push notification \n", [[NSDate date] timeIntervalSince1970]);
+            
+            [[BlueShift sharedInstance] createInAppNotification: userInfo forApplicationState: applicationState];
+        } else {
         
-        // Handle push notification when the app is in inactive or background state ...
-        if ([pushCategory isEqualToString:kNotificationCategoryBuyIdentifier]) {
-            [self handleCategoryForBuyUsingPushDetailsDictionary:userInfo];
-        } else if ([pushCategory isEqualToString:kNotificationCategoryViewCartIdentifier]) {
-            [self handleCategoryForViewCartUsingPushDetailsDictionary:userInfo];
-        } else if ([pushCategory isEqualToString:kNotificationCategoryOfferIdentifier]) {
-            [self handleCategoryForPromotionUsingPushDetailsDictionary:userInfo];
-        }
-        else {
-            NSString *categoryName = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
-            if(categoryName !=nil && ![categoryName isEqualToString:@""]) {
-                if([categoryName isEqualToString:@"carousel"] || [categoryName isEqualToString:@"carousel_animation"]) {
-                    [self handleCarouselPushForCategory:categoryName usingPushDetailsDictionary:userInfo];
+            // Handle push notification when the app is in inactive or background state ...
+            if ([pushCategory isEqualToString:kNotificationCategoryBuyIdentifier]) {
+                [self handleCategoryForBuyUsingPushDetailsDictionary:userInfo];
+            } else if ([pushCategory isEqualToString:kNotificationCategoryViewCartIdentifier]) {
+                [self handleCategoryForViewCartUsingPushDetailsDictionary:userInfo];
+            } else if ([pushCategory isEqualToString:kNotificationCategoryOfferIdentifier]) {
+                [self handleCategoryForPromotionUsingPushDetailsDictionary:userInfo];
+            }
+            else {
+                NSString *categoryName = [[userInfo objectForKey:@"aps"] objectForKey:@"category"];
+                if(categoryName !=nil && ![categoryName isEqualToString:@""]) {
+                    if([categoryName isEqualToString:@"carousel"] || [categoryName isEqualToString:@"carousel_animation"]) {
+                        [self handleCarouselPushForCategory:categoryName usingPushDetailsDictionary:userInfo];
+                    } else {
+                        [self handleCustomCategory:categoryName UsingPushDetailsDictionary:userInfo];
+                    }
                 } else {
-                    [self handleCustomCategory:categoryName UsingPushDetailsDictionary:userInfo];
-                }
-            } else {
-                NSString *urlString = [self.userInfo objectForKey:@"deep_link_url"];
-                NSURL *url = [NSURL URLWithString:urlString];
-                if(url) {
-                    [self handleCustomCategory:@"" UsingPushDetailsDictionary:userInfo];
-                } else {
-                    // Track notification when app is in background and when we click the push notification from tray..
-                    [self trackPushClickedWithParameters:pushTrackParameterDictionary];
+                    NSString *urlString = [self.userInfo objectForKey:@"deep_link_url"];
+                    NSURL *url = [NSURL URLWithString:urlString];
+                    if(url) {
+                        [self handleCustomCategory:@"" UsingPushDetailsDictionary:userInfo];
+                    } else {
+                        // Track notification when app is in background and when we click the push notification from tray..
+                        [self trackPushClickedWithParameters:pushTrackParameterDictionary];
+                    }
                 }
             }
         }
     }
 }
 
+
+-(BOOL) checkIfPayloadHasInAppMessage: (NSDictionary*)userInfo {
+    
+    BOOL isIAMPayloadPresent = false;
+    if (nil != userInfo) {
+        
+        NSDictionary *dataPayload =  [userInfo objectForKey: kSilentNotificationPayloadIdentifierKey];
+        if (nil != dataPayload) {
+            isIAMPayloadPresent = true;
+        } else {
+        
+            NSDictionary *apNSData = [userInfo objectForKey:@"aps"];
+            NSNumber *num = [NSNumber numberWithInt:1];
+            isIAMPayloadPresent = [[apNSData objectForKey:@"content-available"] isEqualToNumber:num];
+        }
+    }
+    return isIAMPayloadPresent;
+}
+
+
+
 - (BOOL)customDeepLinkToPrimitiveCategory {
     
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
 
     
@@ -381,7 +436,7 @@
 
 - (void)handleCategoryForBuyUsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when  buy category push notification is clicked ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(buyCategoryPushClickedWithDetails:)]) {
@@ -414,7 +469,7 @@
 
 - (void)handleCategoryForViewCartUsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when open cart action is selected for push message of cart category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(cartViewCategoryPushClickedWithDetails:)]) {
@@ -444,7 +499,7 @@
 
 - (void)handleCategoryForPromotionUsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // Track notification when the page is deeplinked ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(promotionCategoryPushClickedWithDetails:)]) {
         // User already implemented the promotionCategoryPushClickedWithDetails: in App Delegate...
@@ -470,7 +525,7 @@
 
 - (void)handleCarouselPushForCategory:(NSString *)categoryName usingPushDetailsDictionary:(NSDictionary *) pushDetailsDictionary {
     // method to handle the scenario when go to app action is selected for push message of buy category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     NSString *bundleIdentifier = [BlueShift sharedInstance].config.appGroupID;
     if(bundleIdentifier!=(id)[NSNull null] && ![bundleIdentifier isEqualToString:@""]) {
@@ -518,7 +573,7 @@
 
 - (void)handleCustomCategory:(NSString *)categoryName UsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when go to app action is selected for push message of buy category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(handleCustomCategory:clickedWithDetails:)]) {
@@ -559,7 +614,7 @@
 
 - (void)handleActionForBuyUsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when buy action is selected for push message of buy category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(buyPushActionWithDetails:)]) {
@@ -594,7 +649,7 @@
 
 - (void)handleActionForViewUsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when view action is selected for push message of buy category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(viewPushActionWithDetails:)]) {
@@ -625,7 +680,7 @@
 
 - (void)handleActionForCustomPageForIdentifier:(NSString *)identifier UsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when go to app action is selected for push message of buy category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(handlePushActionForIdentifier:withDetails:)]) {
@@ -665,7 +720,7 @@
 
 - (void)handleActionForOpenCartUsingPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
     // method to handle the scenario when open cart action is selected for push message of cart category ...
-    NSDictionary *pushTrackParameterDictionary = [self pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
+    NSDictionary *pushTrackParameterDictionary = [BlueshiftEventAnalyticsHelper pushTrackParameterDictionaryForPushDetailsDictionary:self.userInfo];
     [self trackPushClickedWithParameters:pushTrackParameterDictionary];
     
     if ([self.blueShiftPushDelegate respondsToSelector:@selector(openCartPushActionWithDetails:)]) {
@@ -693,7 +748,7 @@
     }
 }
 
-- (void)handleActionWithIdentifier: (NSString *)identifier forRemoteNotification:(NSDictionary *)notification completionHandler: (void (^)()) completionHandler {
+- (void)handleActionWithIdentifier: (NSString *)identifier forRemoteNotification:(NSDictionary *)notification completionHandler: (void (^)(void)) completionHandler {
     // Handles the scenario when a push message action is selected ...
     // Differentiation is done on the basis of identifier of the push notification ...
     
@@ -730,7 +785,7 @@
 }
 
 - (void)application:(UIApplication *) application handleActionWithIdentifier: (NSString *) identifier forRemoteNotification: (NSDictionary *) notification
-  completionHandler: (void (^)()) completionHandler {
+  completionHandler: (void (^)(void)) completionHandler {
     
     [self handleActionWithIdentifier:identifier forRemoteNotification:notification completionHandler:completionHandler];
 }
@@ -755,7 +810,6 @@
     
     // Will have to handled by SDK .....
 }
-
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {
     [self.oldDelegate applicationWillEnterForeground:application];
@@ -845,42 +899,6 @@
     [[BlueShift sharedInstance] trackEventForEventName:kEventDismissAlert andParameters:nil canBatchThisEvent:YES];
 }
 
-
-- (NSDictionary *)pushTrackParameterDictionaryForPushDetailsDictionary:(NSDictionary *)pushDetailsDictionary {
-
-    NSString *bsft_experiment_uuid = [pushDetailsDictionary objectForKey:@"bsft_experiment_uuid"];
-    NSString *bsft_user_uuid = [pushDetailsDictionary objectForKey:@"bsft_user_uuid"];
-    NSString *message_uuid = [pushDetailsDictionary objectForKey:@"bsft_message_uuid"];
-    NSString *transactional_uuid = [pushDetailsDictionary objectForKey:@"bsft_transaction_uuid"];
-    NSString *sdkVersion = [NSString stringWithFormat:@"%@", kSDKVersionNumber];
-
-    NSMutableDictionary *pushTrackParametersMutableDictionary = [NSMutableDictionary dictionary];
-    if (bsft_user_uuid) {
-        [pushTrackParametersMutableDictionary setObject:bsft_user_uuid forKey:@"uid"];
-    }
-    if(bsft_experiment_uuid) {
-        [pushTrackParametersMutableDictionary setObject:bsft_experiment_uuid forKey:@"eid"];
-    }
-    if (message_uuid) {
-        [pushTrackParametersMutableDictionary setObject:message_uuid forKey:@"mid"];
-    }
-    if (transactional_uuid) {
-        [pushTrackParametersMutableDictionary setObject:transactional_uuid forKey:@"txnid"];
-    }
-    if (sdkVersion) {
-        [pushTrackParametersMutableDictionary setObject:sdkVersion forKey:@"bsft_sdk_version"];
-    }
-    return [pushTrackParametersMutableDictionary copy];
-}
-
-- (BOOL)isSendPushAnalytics {
-    if (self.userInfo && self.userInfo[@"bsft_seed_list_send"] && [self.userInfo[@"bsft_seed_list_send"] boolValue] == YES) {
-        return NO;
-    } else {
-        return YES;
-    }
-}
-
 - (void)trackAppOpen {
     if ([BlueShift sharedInstance].config.enableAppOpenTrackEvent) {
         [self trackAppOpenWithParameters:nil];
@@ -905,7 +923,7 @@
 }
 
 - (void)trackPushViewedWithParameters:(NSDictionary *)parameters {
-    if ([self isSendPushAnalytics]) {
+    if ([BlueshiftEventAnalyticsHelper isSendPushAnalytics: parameters]) {
         NSMutableDictionary *parameterMutableDictionary = [NSMutableDictionary dictionary];
         
         if (parameters) {
@@ -922,7 +940,7 @@
 }
 
 - (void)trackPushClickedWithParameters:(NSDictionary *)parameters {
-    if ([self isSendPushAnalytics]) {
+    if ([BlueshiftEventAnalyticsHelper isSendPushAnalytics: parameters]) {
         NSMutableDictionary *parameterMutableDictionary = [NSMutableDictionary dictionary];
         
         if (parameters) {
@@ -997,7 +1015,9 @@
     [BlueShiftDeviceData currentDeviceData].locationManager = [[CLLocationManager alloc] init];
     
     if ([[BlueShiftDeviceData currentDeviceData].locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]) {
-        [[BlueShiftDeviceData currentDeviceData].locationManager requestWhenInUseAuthorization];
+        if (@available(iOS 8.0, *)) {
+            [[BlueShiftDeviceData currentDeviceData].locationManager requestWhenInUseAuthorization];
+        }
     } else {
         if(![CLLocationManager locationServicesEnabled] || [CLLocationManager authorizationStatus] == kCLAuthorizationStatusDenied) {
             [[[UIAlertView alloc] initWithTitle:@"No GPS" message:@"Please Enable GPS in you device" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
@@ -1026,7 +1046,11 @@
 
 - (NSURL *)applicationDocumentsDirectory {
     // The directory the application uses to store the Core Data store file. This code uses a directory in the application's documents directory.
-    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
+    
+    if([[[BlueShift sharedInstance] config] appGroupID] != nil)
+        return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:[[[BlueShift sharedInstance] config] appGroupID]];
+    else
+        return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
 - (NSManagedObjectModel *)managedObjectModel {
@@ -1047,6 +1071,9 @@
     
     //NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"BlueShiftSDKDataModel" withExtension:@"momd"];
     NSString * path = @"";
+    if ([[NSBundle mainBundle] pathForResource:@"BlueShiftSDKDataModel" ofType:@"momd" inDirectory:@"Frameworks/BlueShift_Bundle.framework"] != nil) {
+        path = [[NSBundle mainBundle] pathForResource:@"BlueShiftSDKDataModel" ofType:@"momd" inDirectory:@"Frameworks/BlueShift_Bundle.framework"];
+    }
     
     if ([[NSBundle mainBundle] pathForResource:@"BlueShiftSDKDataModel" ofType:@"momd" inDirectory:@"Frameworks/BlueShift_iOS_SDK.framework"] != nil) {
         path = [[NSBundle mainBundle] pathForResource:@"BlueShiftSDKDataModel" ofType:@"momd" inDirectory:@"Frameworks/BlueShift_iOS_SDK.framework"];
@@ -1073,8 +1100,9 @@
     _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
     NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"BlueShift-iOS-SDK.sqlite"];
     NSError *error = nil;
+    NSDictionary *options = @{NSMigratePersistentStoresAutomaticallyOption: @YES, NSInferMappingModelAutomaticallyOption: @YES};
     NSString *failureReason = @"There was an error creating or loading the application's saved data.";
-    if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error]) {
+    if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
         // Report any error we got.
         NSMutableDictionary *dict = [NSMutableDictionary dictionary];
         dict[NSLocalizedDescriptionKey] = @"Failed to initialize the application's saved data";
@@ -1149,6 +1177,20 @@
     }
 }
 
-
+- (void)downloadFileFromURL {
+    NSString *fontFileName = [BlueShiftInAppNotificationHelper createFileNameFromURL: kInAppNotificationFontFileDownlaodURL];
+    if (![BlueShiftInAppNotificationHelper hasFileExist: fontFileName]) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSURL  *url = [NSURL URLWithString: kInAppNotificationFontFileDownlaodURL];
+            NSData *urlData = [NSData dataWithContentsOfURL:url];
+            if (urlData) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSString *fontFilePath = [BlueShiftInAppNotificationHelper getLocalDirectory: fontFileName];
+                    [urlData writeToFile: fontFilePath atomically:YES];
+                });
+            }
+        });
+    }
+}
 
 @end

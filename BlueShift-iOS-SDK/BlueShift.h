@@ -25,22 +25,28 @@
 #import "BlueShiftBatchUploadConfig.h"
 #import "BlueShiftAppData.h"
 #import "SDKVersion.h"
-#import "BlueShiftLiveContent.h"
 #import "BlueShiftPushNotificationSettings.h"
 #import "BlueShiftUserNotificationSettings.h"
 #import "BlueShiftUserNotificationCenterDelegate.h"
+#import "BlueshiftEventAnalyticsHelper.h"
+#import "BlueshiftInAppNotificationRequest.h"
+#import "BlueShiftLiveContent.h"
 
 @class BlueShiftDeviceData;
 @class BlueShiftAppDelegate;
 @class BlueShiftUserNotificationCenterDelegate;
+@class BlueShiftUserInfo;
+@class BlueShiftConfig;
 @interface BlueShift : NSObject
 
 @property (nonatomic, strong) BlueShiftConfig *config;
 @property BlueShiftDeviceData *deviceData;
 @property BlueShiftAppData *appData;
 @property (nonatomic, strong) BlueShiftUserInfo *userInfo;
-@property (nonatomic, strong) BlueShiftPushNotificationSettings *pushNotification;
-@property (nonatomic, strong) BlueShiftUserNotificationSettings *userNotification;
+@property (nonatomic, strong) BlueShiftPushNotificationSettings *pushNotification API_AVAILABLE(ios(10.0));
+@property (nonatomic, strong) BlueShiftUserNotificationSettings *userNotification API_AVAILABLE(ios(10.0));
+@property (nonatomic, strong, readwrite) NSTimer *inAppMsgAPITimer;
+@property (nonatomic, strong, readwrite) NSTimer *inAppDBTimer;
 @property NSString *deviceToken;
 
 + (instancetype)sharedInstance;
@@ -50,8 +56,13 @@
 - (void) setPushParamDelegate: (id) obj;
 - (NSString *) getDeviceToken;
 - (void) setDeviceToken;
+- (void) createInAppNotification:(NSDictionary *)dictionary forApplicationState:(UIApplicationState)applicationState;
+- (void)registerForInAppMessage:(NSString *)displayPage;
+- (void)unregisterForInAppMessage;
+
 @property BlueShiftAppDelegate *appDelegate;
 @property BlueShiftUserNotificationCenterDelegate *userNotificationDelegate;
+
 
 
 // track events functions ...
@@ -124,5 +135,17 @@
 - (void)trackPushClickedWithParameters:(NSDictionary *)userInfo canBatchThisEvent:(BOOL)isBatchEvent;
 
 - (void)trackPushViewedWithParameters:(NSDictionary *)userInfo canBacthThisEvent:(BOOL)isBatchEvent;
+
+- (void)trackInAppNotificationDeliveredWithParameter:(NSDictionary *)notification canBacthThisEvent:(BOOL)isBatchEvent;
+
+- (void)trackInAppNotificationShowingWithParameter:(NSDictionary *)notification canBacthThisEvent:(BOOL)isBatchEvent;
+
+- (void)trackInAppNotificationButtonTappedWithParameter:(NSDictionary *)notification canBacthThisEvent:(BOOL)isBatchEvent;
+
+- (void)trackInAppNotificationDismissWithParameter:(NSDictionary *)notificationPayload
+                                 canBacthThisEvent:(BOOL)isBatchEvent;
+- (void)displayInAppNotification;
+
+- (void)fetchInAppNotificationFromAPI:(void (^)(void))handler;
 
 @end
