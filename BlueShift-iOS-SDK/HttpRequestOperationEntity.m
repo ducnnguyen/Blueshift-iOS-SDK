@@ -30,46 +30,40 @@
         }
     }
     if (masterContext) {
+        NSManagedObjectContext *context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
+        context.parentContext = masterContext;
+        // return if context is unavailable ...
+        if (context == nil || masterContext == nil) {
+            return ;
+        }
+        // gets the httpMethodNumber type for the enum ...
+        
+        self.httpMethodNumber = [NSNumber numberWithBlueShiftHTTPMethod:httpMethod];
+        
+        if (parameters) {
+            self.parameters = [NSKeyedArchiver archivedDataWithRootObject:parameters];
+        }
+        
+        self.url = url;
+        self.nextRetryTimeStamp = [NSNumber numberWithDouble:nextRetryTimeStamp];
+        self.retryAttemptsCount = [NSNumber numberWithInteger:retryAttemptsCount];
+        self.isBatchEvent = isBatchEvent;
+        
         @try {
-            NSManagedObjectContext *context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
-            context.parentContext = masterContext;
-            // return if context is unavailable ...
-            if (context == nil || masterContext == nil) {
-                return ;
+            if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
+                [context performBlock:^{
+                    NSError *error = nil;
+                    [context save:&error];
+                    if(masterContext && [masterContext isKindOfClass:[NSManagedObjectContext class]]) {
+                        [masterContext performBlock:^{
+                            NSError *error = nil;
+                            [masterContext save:&error];
+                        }];
+                    }
+                }];
             }
-            // gets the httpMethodNumber type for the enum ...
-            
-            self.httpMethodNumber = [NSNumber numberWithBlueShiftHTTPMethod:httpMethod];
-            
-            // will only archive parameters if they are present to prevent crash ...
-            
-            if (parameters) {
-                self.parameters = [NSKeyedArchiver archivedDataWithRootObject:parameters];
-            }
-            
-            self.url = url;
-            self.nextRetryTimeStamp = [NSNumber numberWithDouble:nextRetryTimeStamp];
-            self.retryAttemptsCount = [NSNumber numberWithInteger:retryAttemptsCount];
-            self.isBatchEvent = isBatchEvent;
-            
-            @try {
-                if(context && [context isKindOfClass:[NSManagedObjectContext class]]) {
-                    [context performBlock:^{
-                        NSError *error = nil;
-                        [context save:&error];
-                        if(masterContext && [masterContext isKindOfClass:[NSManagedObjectContext class]]) {
-                            [masterContext performBlock:^{
-                                NSError *error = nil;
-                                [masterContext save:&error];
-                            }];
-                        }
-                    }];
-                }
-            }
-            @catch (NSException *exception) {
-                NSLog(@"Caught exception %@", exception);
-            }
-        } @catch (NSException *exception) {
+        }
+        @catch (NSException *exception) {
             NSLog(@"Caught exception %@", exception);
         }
     } else {

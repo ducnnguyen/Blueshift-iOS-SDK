@@ -72,7 +72,6 @@ static BlueShiftDeviceData *_currentDeviceData = nil;
         [deviceMutableDictionary setObject:self.deviceToken forKey:@"device_token"];
     }
     
-    
     if (self.deviceIDFV) {
         [deviceMutableDictionary setObject:self.deviceIDFV forKey:@"device_idfv"];
     }

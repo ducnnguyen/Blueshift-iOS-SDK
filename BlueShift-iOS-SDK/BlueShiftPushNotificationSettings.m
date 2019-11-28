@@ -10,7 +10,7 @@
 
 @implementation BlueShiftPushNotificationSettings
 
-- (UIMutableUserNotificationCategory *)buyCategory {
+- (UIMutableUserNotificationCategory *)buyCategory  API_AVAILABLE(ios(8.0)){
     UIMutableUserNotificationAction *buyAction;
     buyAction = [[UIMutableUserNotificationAction alloc] init];
     [buyAction setActivationMode:UIUserNotificationActivationModeForeground];
@@ -36,7 +36,7 @@
     return buyCategory;
 }
 
-- (UIMutableUserNotificationCategory *)viewCartCategory {
+- (UIMutableUserNotificationCategory *)viewCartCategory  API_AVAILABLE(ios(8.0)){
     UIMutableUserNotificationAction *openCartAction;
     openCartAction = [[UIMutableUserNotificationAction alloc] init];
     [openCartAction setActivationMode:UIUserNotificationActivationModeForeground];
@@ -54,7 +54,7 @@
     return viewCartCategory;
 }
 
-- (UIMutableUserNotificationCategory *)oneButtonAlertCategory {
+- (UIMutableUserNotificationCategory *)oneButtonAlertCategory  API_AVAILABLE(ios(8.0)){
     UIMutableUserNotificationCategory *oneButtonAlertCategory;
     oneButtonAlertCategory = [[UIMutableUserNotificationCategory alloc] init];
     [oneButtonAlertCategory setIdentifier:kNotificationOneButtonAlertIdentifier];
@@ -64,7 +64,7 @@
     return oneButtonAlertCategory;
 }
 
-- (UIMutableUserNotificationCategory *)twoButtonAlertCategory {
+- (UIMutableUserNotificationCategory *)twoButtonAlertCategory  API_AVAILABLE(ios(8.0)){
     UIMutableUserNotificationAction *viewAction;
     viewAction = [[UIMutableUserNotificationAction alloc] init];
     [viewAction setActivationMode:UIUserNotificationActivationModeForeground];
@@ -82,17 +82,121 @@
     return twoButtonAlertCategory;
 }
 
-- (NSSet *)notificationCategories {
-    return [NSSet setWithObjects:self.buyCategory, self.viewCartCategory, self.oneButtonAlertCategory, self.twoButtonAlertCategory, nil];
+- (UIMutableUserNotificationCategory *)carouselCategory  API_AVAILABLE(ios(8.0)){
+    NSString *nextHtmlString = @"&#9654;&#9654;";
+    NSData *nextStringData = [nextHtmlString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    NSDictionary *options = @{NSDocumentTypeDocumentAttribute:NSHTMLTextDocumentType};
+    NSAttributedString *decodedString;
+    decodedString = [[NSAttributedString alloc] initWithData:nextStringData
+                                                     options:options
+                                          documentAttributes:NULL
+                                                       error:NULL];
+    
+    UIMutableUserNotificationAction *nextAction;
+    nextAction = [[UIMutableUserNotificationAction alloc] init];
+    [nextAction setActivationMode:UIUserNotificationActivationModeForeground];
+    [nextAction setTitle:decodedString.string];
+    [nextAction setIdentifier:kNotificationCarouselNextIdentifier];
+    [nextAction setDestructive:NO];
+    [nextAction setAuthenticationRequired:NO];
+    
+    NSString *previousHtmlString = @"&#9664;&#9664;";
+    NSData *previousStringData = [previousHtmlString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    decodedString = [[NSAttributedString alloc] initWithData:previousStringData
+                                                     options:options
+                                          documentAttributes:NULL
+                                                       error:NULL];
+    
+    UIMutableUserNotificationAction *previousAction;
+    previousAction = [[UIMutableUserNotificationAction alloc] init];
+    [previousAction setActivationMode:UIUserNotificationActivationModeForeground];
+    [previousAction setTitle:decodedString.string];
+    [previousAction setIdentifier:kNotificationCarouselPreviousIdentifier];
+    [previousAction setDestructive:NO];
+    [previousAction setAuthenticationRequired:NO];
+    
+    UIMutableUserNotificationAction *gotoAppAction;
+    gotoAppAction = [[UIMutableUserNotificationAction alloc] init];
+    [gotoAppAction setActivationMode:UIUserNotificationActivationModeForeground];
+    [gotoAppAction setTitle:@"Go to app"];
+    [gotoAppAction setIdentifier:kNotificationCarouselGotoappIdentifier];
+    [gotoAppAction setDestructive:NO];
+    [gotoAppAction setAuthenticationRequired:NO];
+    
+    UIMutableUserNotificationCategory *carouselCategory;
+    carouselCategory = [[UIMutableUserNotificationCategory alloc] init];
+    [carouselCategory setIdentifier:kNotificationCarouselIdentifier];
+    [carouselCategory setActions:@[nextAction, previousAction, gotoAppAction]
+                      forContext:UIUserNotificationActionContextDefault];
+    
+    return carouselCategory;
 }
 
-- (UIUserNotificationType)notificationTypes {
+- (UIMutableUserNotificationCategory *)carouselAnimationCategory  API_AVAILABLE(ios(8.0)){
+    NSString *nextHtmlString = @"&#9654;&#9654;";
+    NSData *nextStringData = [nextHtmlString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    NSDictionary *options = @{NSDocumentTypeDocumentAttribute:NSHTMLTextDocumentType};
+    NSAttributedString *decodedString;
+    decodedString = [[NSAttributedString alloc] initWithData:nextStringData
+                                                     options:options
+                                          documentAttributes:NULL
+                                                       error:NULL];
+    
+    UIMutableUserNotificationAction *nextAction;
+    nextAction = [[UIMutableUserNotificationAction alloc] init];
+    [nextAction setActivationMode:UIUserNotificationActivationModeForeground];
+    [nextAction setTitle:decodedString.string];
+    [nextAction setIdentifier:kNotificationCarouselNextIdentifier];
+    [nextAction setDestructive:NO];
+    [nextAction setAuthenticationRequired:NO];
+    
+    NSString *previousHtmlString = @"&#9664;&#9664;";
+    NSData *previousStringData = [previousHtmlString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    decodedString = [[NSAttributedString alloc] initWithData:previousStringData
+                                                     options:options
+                                          documentAttributes:NULL
+                                                       error:NULL];
+    
+    UIMutableUserNotificationAction *previousAction;
+    previousAction = [[UIMutableUserNotificationAction alloc] init];
+    [previousAction setActivationMode:UIUserNotificationActivationModeForeground];
+    [previousAction setTitle:decodedString.string];
+    [previousAction setIdentifier:kNotificationCarouselPreviousIdentifier];
+    [previousAction setDestructive:NO];
+    [previousAction setAuthenticationRequired:NO];
+    
+    UIMutableUserNotificationAction *gotoAppAction;
+    gotoAppAction = [[UIMutableUserNotificationAction alloc] init];
+    [gotoAppAction setActivationMode:UIUserNotificationActivationModeForeground];
+    [gotoAppAction setTitle:@"Go to app"];
+    [gotoAppAction setIdentifier:kNotificationCarouselGotoappIdentifier];
+    [gotoAppAction setDestructive:NO];
+    [gotoAppAction setAuthenticationRequired:NO];
+    
+    UIMutableUserNotificationCategory *carouselAnimationCategory;
+    carouselAnimationCategory = [[UIMutableUserNotificationCategory alloc] init];
+    [carouselAnimationCategory setIdentifier:kNotificationCarouselAnimationIdentifier];
+    [carouselAnimationCategory setActions:@[nextAction, previousAction, gotoAppAction]
+                               forContext:UIUserNotificationActionContextDefault];
+    
+    return carouselAnimationCategory;
+}
+
+- (NSSet *)notificationCategories {
+    return [NSSet setWithObjects:self.buyCategory, self.viewCartCategory, self.oneButtonAlertCategory, self.twoButtonAlertCategory, self.carouselCategory, self.carouselAnimationCategory, nil];
+}
+
+- (UIUserNotificationType)notificationTypes  API_AVAILABLE(ios(8.0)){
     return (UIUserNotificationTypeAlert|
             UIUserNotificationTypeSound|
             UIUserNotificationTypeBadge);
 }
 
-- (UIUserNotificationSettings *)notificationSettings {
+- (UIUserNotificationSettings *)notificationSettings  API_AVAILABLE(ios(8.0)){
     return [UIUserNotificationSettings settingsForTypes:self.notificationTypes categories:self.notificationCategories];
 }
 
